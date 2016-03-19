@@ -6,14 +6,21 @@
             [goog.history.EventType :as HistoryEventType]
             [markdown.core :refer [md->html]]
             [owlet-cms.ajax :refer [load-interceptors!]]
-            [ajax.core :refer [GET POST]])
+            [ajax.core :refer [GET POST]]
+            [cljsjs.auth0-lock :as Auth0Lock])
   (:import goog.History))
+
+(enable-console-print!)
+
+(def lock (new js/Auth0Lock
+               "aCHybcxZ3qE6nWta60psS0An1jHUlgMm"
+               "codefordenver.auth0.com"))
 
 (defn nav-link [uri title page collapsed?]
   [:li.nav-item
    {:class (when (= page (session/get :page)) "active")}
    [:a.nav-link
-    {:href uri
+    {:href     uri
      :on-click #(reset! collapsed? true)} title]])
 
 (defn navbar []
@@ -40,7 +47,16 @@
    [:div.jumbotron
     [:h1 "Welcome to owlet-cms"]
     [:p "Time to start building your site!"]
-    [:p [:a.btn.btn-primary.btn-lg {:href "http://luminusweb.net"} "Learn more »"]]]
+    [:p [:a.btn.btn-primary.btn-lg {:href    "#"
+                                    :onClick (fn [e]
+                                               (.show lock #js {:popup true}
+                                                      (fn [err profile token]
+                                                        (if (not (nil? err))
+                                                          (print err)
+                                                          (do
+                                                            (.setItem js/localStorage "userToken" token) ;; save the JWT token.
+                                                            ;; (swap! assoc :profile (js->clj profile :keywordize-keys true))
+                                                            (print profile))))))} "Sign-in"]]]
    [:div.row
     [:div.col-md-12
      [:h2 "Welcome to ClojureScript"]]]
@@ -51,7 +67,7 @@
               {:__html (md->html docs)}}]]])])
 
 (def pages
-  {:home #'home-page
+  {:home  #'home-page
    :about #'about-page})
 
 (defn page []
@@ -62,21 +78,21 @@
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
-  (session/put! :page :home))
+                    (session/put! :page :home))
 
 (secretary/defroute "/about" []
-  (session/put! :page :about))
+                    (session/put! :page :about))
 
 ;; -------------------------
 ;; History
 ;; must be called after routes have been defined
 (defn hook-browser-navigation! []
   (doto (History.)
-        (events/listen
-          HistoryEventType/NAVIGATE
-          (fn [event]
-              (secretary/dispatch! (.-token event))))
-        (.setEnabled true)))
+    (events/listen
+      HistoryEventType/NAVIGATE
+      (fn [event]
+        (secretary/dispatch! (.-token event))))
+    (.setEnabled true)))
 
 ;; -------------------------
 ;; Initialize app

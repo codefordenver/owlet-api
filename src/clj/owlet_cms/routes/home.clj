@@ -7,10 +7,7 @@
 (defn home-page []
   (layout/render "home.html"))
 
-(defn handle-user-upsert-webhook [res])
-
 (defroutes home-routes
            (GET "/" [] (home-page))
-           (GET "/docs" [] (response/ok (-> "docs/docs.md" io/resource slurp)))
-           (PUT "/user-upsert-webhook" {params :params} handle-user-upsert-webhook))
+           (GET "/docs" [] (response/ok (-> "docs/docs.md" io/resource slurp))))
 

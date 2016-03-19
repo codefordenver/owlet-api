@@ -2,12 +2,14 @@
   (:require [compojure.core :refer [routes wrap-routes]]
             [owlet-cms.layout :refer [error-page]]
             [owlet-cms.routes.home :refer [home-routes]]
+            [owlet-cms.routes.api :refer [api-routes]]
             [owlet-cms.routes.services :refer [service-routes]]
             [compojure.route :as route]
             [owlet-cms.middleware :as middleware]))
 
 (def app-routes
   (routes
+    #'api-routes
     #'service-routes
     (wrap-routes #'home-routes middleware/wrap-csrf)
     (route/not-found

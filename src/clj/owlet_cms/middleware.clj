@@ -8,7 +8,8 @@
             [ring.middleware.webjars :refer [wrap-webjars]]
             [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
-            [ring.middleware.format :refer [wrap-restful-format]])
+            [ring.middleware.format :refer [wrap-restful-format]]
+            [ring.middleware.cors :refer [wrap-cors]])
   (:import [javax.servlet ServletContext]))
 
 (defn wrap-context [handler]
@@ -64,4 +65,6 @@
             (assoc-in [:security :anti-forgery] false)
             (dissoc :session)))
       wrap-context
+      (wrap-cors :access-control-allow-origin [#".+"]
+                 :access-control-allow-methods [:put])
       wrap-internal-error))

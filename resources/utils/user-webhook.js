@@ -4,6 +4,8 @@
 function (user, context, callback) {
     var request = require('request');
     var url = 'TOP-SECRET';
+    var admin = false;
+    user.admin = admin;
     var payload = {
         user: user,
         context: context

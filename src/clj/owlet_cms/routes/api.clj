@@ -6,20 +6,29 @@
             [compojure.api.sweet :refer [context]]
             [clojure.java.jdbc :as jdbc]))
 
+(defn is-not-social-login-but-verified? [user]
+  (let [identity0 (first (:identities user))]
+    (if (:isSocial identity0)
+      true
+      (if (:email_verified user)
+        true
+        false))))
+
 (defn handle-user-upsert-webhook [res]
   (let [user (get-in res [:params :user])
         ;; context (get-in res [:params :context])
-        ;; _ (clojure.pprint/pprint context)
+        ;; _ (clojure.pprint/pprint user)
         transact! (try
-                    (jdbc/with-db-transaction
-                      [t-conn *db*]
-                      (jdbc/db-set-rollback-only! t-conn)
-                      (db/create-user!
-                        {:id       (:_id user)
-                         :name     (:name user)
-                         :nickname (:nickname user)
-                         :email    (:email user)
-                         :picture  (:picture user)}))
+                    (if (is-not-social-login-but-verified? user)
+                      (jdbc/with-db-transaction
+                        [t-conn *db*]
+                        (jdbc/db-set-rollback-only! t-conn)
+                        (db/create-user!
+                          {:id       (:_id user)
+                           :name     (:name user)
+                           :nickname (:nickname user)
+                           :email    (:email user)
+                           :picture  (:picture user)})))
                     (catch Exception e (str "caught e:" (.getNextException e))))]
     ;; returns 1 if inserted
     (println transact!)

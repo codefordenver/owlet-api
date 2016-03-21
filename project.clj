@@ -36,7 +36,8 @@
                  [metosin/compojure-api "1.0.1"]
                  [luminus-log4j "0.1.3"]
                  [ring-cors "0.1.7"]
-                 [cljsjs/auth0-lock "8.1.5-1"]]
+                 [cljsjs/auth0-lock "8.1.5-1"]
+                 [cheshire "5.5.0"]]
 
   :min-lein-version "2.0.0"
 

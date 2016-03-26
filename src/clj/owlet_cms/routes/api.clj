@@ -2,7 +2,7 @@
   (:require [owlet-cms.db.core :refer [*db*] :as db])
   (:require [compojure.core :refer [defroutes GET PUT]]
             [ring.util.http-response :refer :all]
-            [ring.handler.dump :refer [handle-dump]]
+            ;; [ring.handler.dump :refer [handle-dump]]
             [compojure.api.sweet :refer [context]]
             [clojure.java.jdbc :as jdbc]))
 

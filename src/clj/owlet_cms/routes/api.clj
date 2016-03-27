@@ -17,7 +17,7 @@
 (defn handle-user-upsert-webhook [res]
   (let [user (get-in res [:params :user])
         ;; context (get-in res [:params :context])
-        ;; _ (clojure.pprint/pprint user)
+        _ (clojure.pprint/pprint user)
         transact! (try
                     (if (is-not-social-login-but-verified? user)
                       (jdbc/with-db-transaction

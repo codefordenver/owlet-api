@@ -28,3 +28,9 @@ SELECT * FROM users
 -- :doc delete a user given the id
 DELETE FROM users
 WHERE id = :id
+
+-- :name update-user-district-id! :! :n
+-- :doc update user's district it
+UPDATE users
+SET district_id = :district_id
+WHERE id = :id

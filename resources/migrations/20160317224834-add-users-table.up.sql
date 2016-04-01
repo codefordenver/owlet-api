@@ -4,4 +4,5 @@ CREATE TABLE users
  nickname VARCHAR(30),
  email VARCHAR(60),
  picture VARCHAR(300),
- admin BOOLEAN DEFAULT FALSE);
+ admin BOOLEAN DEFAULT FALSE,
+ district_id varchar(6) DEFAULT '000000');

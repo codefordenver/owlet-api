@@ -24,7 +24,7 @@
                         [t-conn *db*]
                         (jdbc/db-set-rollback-only! t-conn)
                         (db/create-user!
-                          {:id       (:_id user)
+                          {:id       (:user_id user)
                            :name     (:name user)
                            :nickname (:nickname user)
                            :email    (:email user)
@@ -43,9 +43,23 @@
     (when users
       (ok {:data users}))))
 
+(defn update-users-district-id! [res]
+  (let [district_id (get-in res [:params :district-id])
+        user_id (get-in res [:params :user-id])
+        transaction! (jdbc/with-db-transaction [t-conn *db*]
+                                     (jdbc/db-set-rollback-only! t-conn)
+                                     (db/update-user-district-id! {:district_id district_id
+                                                                   :id          user_id}))]
+    (if (= 1 transaction!)
+      (ok "updated user's district id")
+      (do 
+        (println transaction!)
+        (internal-server-error transaction!)))))
+
 (defroutes api-routes
            (context "/api" []
                     (GET "/users" [] handle-get-users)
+                    (PUT "/users-district-id" {params :params} update-users-district-id!)
                     (PUT "/webhook" {params :params} handle-user-upsert-webhook)))
 
 

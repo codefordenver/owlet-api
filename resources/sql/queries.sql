@@ -15,7 +15,7 @@ WHERE id = :id
 SELECT * FROM users
 WHERE id = :id
 
--- :name get-user-by-email :? :1
+-- :name get-user-by-email :? :*
 -- :doc retrieve a user given email
 SELECT * FROM users
 WHERE email = :email

@@ -4,6 +4,7 @@
             [ring.util.http-response :refer :all]
             ;; [ring.handler.dump :refer [handle-dump]]
             [compojure.api.sweet :refer [context]]
+            [clojure.pprint :refer [pprint]]
             [clojure.java.jdbc :as jdbc]))
 
 (defn is-not-social-login-but-verified? [user]
@@ -14,17 +15,28 @@
         true
         false))))
 
+(defn find-user-by-id [id]
+  (try
+    (jdbc/with-db-transaction
+      [t-conn *db*]
+      (jdbc/db-set-rollback-only! t-conn)
+      (db/get-user {:id id}))
+    (catch Exception e (str "caught e:" (.getNextException e)))))
+
+(defn find-user-by-email [email]
+  (try
+    (jdbc/with-db-transaction
+      [t-conn *db*]
+      (jdbc/db-set-rollback-only! t-conn)
+      (db/get-user-by-email {:email email}))
+    (catch Exception e (str "caught e:" (.getNextException e)))))
+
 (defn handle-user-insert-webhook [res]
   (let [user (get-in res [:params :user])
         ;; context (get-in res [:params :context])
-        found (try
-                (jdbc/with-db-transaction
-                  [t-conn *db*]
-                  (jdbc/db-set-rollback-only! t-conn)
-                  (db/get-user {:id (:user_id user)}))
-                (catch Exception e (str "caught e:" (.getNextException e))))]
-    (clojure.pprint/pprint user)
-    (if-not found
+        found? (find-user-by-id (:user_id user))]
+    (pprint user)
+    (if-not found?
       (let [transact! (try
                         (if (is-not-social-login-but-verified? user)
                           (jdbc/with-db-transaction
@@ -51,24 +63,39 @@
     (when users
       (ok {:data users}))))
 
-(defn update-users-district-id! [res]
-  (let [district_id (get-in res [:params :district-id])
+(defn handle-update-users-district-id! [res]
+  (let [ok-response (ok "updated user's district id")
         user_id (get-in res [:params :user-id])
-        transaction! (jdbc/with-db-transaction
-                       [t-conn *db*]
-                       (jdbc/db-set-rollback-only! t-conn)
-                       (db/update-user-district-id! {:district_id district_id
-                                                     :id          user_id}))]
-    (if (= 1 transaction!)
-      (ok "updated user's district id")
-      (do
-        (println transaction!)
-        (internal-server-error transaction!)))))
+        district_id (get-in res [:params :district-id])
+        found? (find-user-by-id user_id)
+        update-district-id! (fn [user_id district-id]
+                              (jdbc/with-db-transaction
+                                [t-conn *db*]
+                                (jdbc/db-set-rollback-only! t-conn)
+                                (db/update-user-district-id! {:district_id district-id
+                                                              :id          user_id})))]
+    (if found?
+      ;; check for multiple accounts with the same email
+      (let [n-accounts (into [] (find-user-by-email (:email found?)))]
+        (if (> (count n-accounts) 1)
+          ;; update all accounts with same :email
+          (let [_ (doseq [user n-accounts]
+                     (update-district-id! (:id user) district_id))]
+            ok-response)
+          ;; update existing single user
+          (update-district-id! user_id district_id)))
+      ;; first time user, or single time user
+      (let [transaction! (update-district-id! user_id district_id)]
+        (if (= 1 transaction!)
+          ok-response
+          (do
+            (println transaction!)
+            (internal-server-error transaction!)))))))
 
 (defroutes api-routes
            (context "/api" []
                     (GET "/users" [] handle-get-users)
-                    (PUT "/users-district-id" {params :params} update-users-district-id!)
+                    (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
                     (PUT "/webhook" {params :params} handle-user-insert-webhook)))
 
 

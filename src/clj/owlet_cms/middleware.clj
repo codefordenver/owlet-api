@@ -66,5 +66,5 @@
             (dissoc :session)))
       wrap-context
       (wrap-cors :access-control-allow-origin [#".+"]
-                 :access-control-allow-methods [:put])
+                 :access-control-allow-methods [:get :put])
       wrap-internal-error))

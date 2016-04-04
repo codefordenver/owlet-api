@@ -92,8 +92,16 @@
             (println transaction!)
             (internal-server-error transaction!)))))))
 
+(defn handle-singler-user-lookup [req]
+  (let [user-id (get-in req [:route-params :id])
+        found (find-user-by-id user-id)]
+    (if found
+      (ok found)
+      (not-found "user not found"))))
+
 (defroutes api-routes
            (context "/api" []
+                    (GET "/user/:id" [] handle-singler-user-lookup)
                     (GET "/users" [] handle-get-users)
                     (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
                     (PUT "/webhook" {params :params} handle-user-insert-webhook)))

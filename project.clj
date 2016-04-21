@@ -24,7 +24,7 @@
                  [org.webjars/webjars-locator-jboss-vfs "0.1.0"]
                  [luminus-immutant "0.1.9"]
                  [luminus-migrations "0.1.0"]
-                 [conman "0.4.6"]
+                 [conman "0.5.0"]
                  [org.postgresql/postgresql "9.4-1206-jdbc4"]
                  [metosin/compojure-api "1.0.1"]
                  [luminus-log4j "0.1.3"]

@@ -1,8 +1,7 @@
 (ns owlet-cms.routes.api
   (:require [owlet-cms.db.core :refer [*db*] :as db])
-  (:require [compojure.core :refer [defroutes GET PUT]]
+  (:require [compojure.core :refer [defroutes GET PUT POST]]
             [ring.util.http-response :refer :all]
-            ;; [ring.handler.dump :refer [handle-dump]]
             [compojure.api.sweet :refer [context]]
             [clojure.pprint :refer [pprint]]
             [clojure.java.jdbc :as jdbc]))
@@ -15,12 +14,20 @@
         true
         false))))
 
-(defn find-user-by-id [id]
+(defn find-user-by-social-id [sid]
   (try
     (jdbc/with-db-transaction
       [t-conn *db*]
       (jdbc/db-set-rollback-only! t-conn)
-      (db/get-user {:id id}))
+      (db/get-user {:sid sid}))
+    (catch Exception e (str "caught e:" (.getNextException e)))))
+
+(defn get-user-entries-by-id [id]
+  (try
+    (jdbc/with-db-transaction
+      [t-conn *db*]
+      (jdbc/db-set-rollback-only! t-conn)
+      (db/get-user-entries-by-id {:id id}))
     (catch Exception e (str "caught e:" (.getNextException e)))))
 
 (defn find-user-by-email [email]
@@ -31,11 +38,9 @@
       (db/get-user-by-email {:email email}))
     (catch Exception e (str "caught e:" (.getNextException e)))))
 
-(defn handle-user-insert-webhook [res]
+(defn handle-user-insert-webhook! [res]
   (let [user (get-in res [:params :user])
-        ;; context (get-in res [:params :context])
-        found? (find-user-by-id (:user_id user))]
-    (pprint user)
+        found? (find-user-by-social-id (:user_id user))]
     (if-not found?
       (let [transact! (try
                         (if (is-not-social-login-but-verified? user)
@@ -43,13 +48,12 @@
                             [t-conn *db*]
                             (jdbc/db-set-rollback-only! t-conn)
                             (db/create-user!
-                              {:id       (:user_id user)
+                              {:sid      (:user_id user)
                                :name     (:name user)
                                :nickname (:nickname user)
                                :email    (:email user)
                                :picture  (:picture user)})))
                         (catch Exception e (str "caught e:" (.getNextException e))))]
-        ;; returns 1 if inserted
         (if transact!
           (ok user)
           (internal-server-error transact!)))
@@ -63,24 +67,24 @@
     (when users
       (ok {:data users}))))
 
-(defn handle-update-users-district-id! [res]
+(defn handle-update-users-district-id! [req]
   (let [ok-response (ok "updated user's district id")
-        user_id (get-in res [:params :user-id])
-        district_id (get-in res [:params :district-id])
-        found? (find-user-by-id user_id)
+        user_id (get-in req [:params :user-id])
+        district_id (get-in req [:params :district-id])
+        found? (find-user-by-social-id user_id)
         update-district-id! (fn [user_id district-id]
                               (jdbc/with-db-transaction
                                 [t-conn *db*]
                                 (jdbc/db-set-rollback-only! t-conn)
                                 (db/update-user-district-id! {:district_id district-id
-                                                              :id          user_id})))]
+                                                              :sid         user_id})))]
     (if found?
       ;; check for multiple accounts with the same email
       (let [n-accounts (into [] (find-user-by-email (:email found?)))]
         (if (> (count n-accounts) 1)
           ;; update all accounts with same :email
           (let [_ (doseq [user n-accounts]
-                     (update-district-id! (:id user) district_id))]
+                    (update-district-id! (:sid user) district_id))]
             ok-response)
           ;; update existing single user
           (update-district-id! user_id district_id)))
@@ -92,18 +96,78 @@
             (println transaction!)
             (internal-server-error transaction!)))))))
 
+(defn- get-entry-by-id
+  "get entries ids from contentful"
+  [id]
+  (try
+    (jdbc/with-db-transaction
+      [t-conn *db*]
+      (jdbc/db-set-rollback-only! t-conn)
+      (db/get-entry-by-id {:id id}))
+    (catch Exception e (str "caught e:" (.getNextException e)))))
+
 (defn handle-singler-user-lookup [req]
-  (let [user-id (get-in req [:route-params :id])
-        found (find-user-by-id user-id)]
-    (if found
-      (ok found)
+  (let [user-id (get-in req [:route-params :id])]
+    (if-let [found (find-user-by-social-id user-id)]
+      (if-let [entries (get-user-entries-by-id (:id found))]
+        (if (not (empty? entries))
+          (let [entry_ids (mapv #(get % :entry_id) entries)
+                join-entries-user (assoc found
+                                    :entries (->> entry_ids
+                                                  (map #(:entry (first (get-entry-by-id %))))))]
+            (ok join-entries-user))
+          (ok found)))
       (not-found "user not found"))))
+
+
+(defn- check-for-duplicate-entries [sid]
+  (if-let [found (find-user-by-social-id sid)]
+    (if-let [entries (get-user-entries-by-id (:id found))]
+      (if (not (empty? entries))
+        (let [entry_ids (mapv #(get % :entry_id) entries)]
+          (->> entry_ids
+               (mapv #(:entry (first (get-entry-by-id %))))))
+        []))))
+
+(defn handle-update-user-content! [req]
+  (let [entry-id (get-in req [:params :sys :id])
+        social-id (get-in req [:params :fields :socialid :en-US])
+        publish-header? (= (get-in req [:headers "x-contentful-topic"])
+                           "ContentManagement.Entry.publish")]
+    (if publish-header?
+      (if (and entry-id social-id)
+        (let [has-entry? (some? (some (fn [e] (= entry-id e))
+                                      (check-for-duplicate-entries social-id)))]
+          (if-not has-entry?
+            (if-let [user-found (find-user-by-social-id social-id)]
+              (let [insert-entry! (try
+                                    (jdbc/with-db-transaction
+                                      [t-conn *db*]
+                                      (jdbc/db-set-rollback-only! t-conn)
+                                      (db/insert-user-entry! {:entry entry-id}))
+                                    (catch Exception e (str "caught e:" (.getNextException e))))]
+                (if insert-entry!
+                  (let [insert-into-user_entries! (try
+                                                    (jdbc/with-db-transaction
+                                                      [t-conn *db*]
+                                                      (jdbc/db-set-rollback-only! t-conn)
+                                                      (db/insert-into-user_entries! {:user_id  (:id user-found)
+                                                                                     :entry_id (:id (first insert-entry!))}))
+                                                    (catch Exception e (str "caught e:" (.getNextException e))))]
+                    (if insert-into-user_entries!
+                      (ok insert-into-user_entries!)
+                      (internal-server-error "opps")))
+                  (internal-server-error "opps"))))
+            (not-modified "Only updating for published content."))))
+      (not-modified "Only updating for published content."))))
 
 (defroutes api-routes
            (context "/api" []
                     (GET "/user/:id" [] handle-singler-user-lookup)
                     (GET "/users" [] handle-get-users)
-                    (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
-                    (PUT "/webhook" {params :params} handle-user-insert-webhook)))
+                    (PUT "/users-district-id" {params :params} handle-update-users-district-id!))
+           (context "/webhooks" []
+                    (PUT "/auth0" {params :params} handle-user-insert-webhook!)
+                    (POST "/contentful" {params :params} handle-update-user-content!)))
 
 

@@ -29,7 +29,8 @@
                  [metosin/compojure-api "1.0.1"]
                  [luminus-log4j "0.1.3"]
                  [ring-cors "0.1.7"]
-                 [cheshire "5.5.0"]]
+                 [cheshire "5.5.0"]
+                 [http-kit "2.1.18"]]
 
   :min-lein-version "2.0.0"
 

@@ -53,7 +53,21 @@ VALUES (:user_id, :entry_id)
 SELECT entry_id FROM user_entries
 WHERE user_id = :id
 
--- :name get-entry-by-id :? :*
--- :doc retrieve a user with entries by id
+-- :name get-entry-by-id :? :1
+-- :doc retrieve an entry by id
 SELECT entry FROM entries
 WHERE id = :id
+
+-- :name get-entry-id-from-entries :? :1
+-- :doc retrieve an entry-id by entry
+SELECT id FROM entries WHERE entry = :entry
+
+-- :name delete-entry-id-from-user-entries! :! :n
+-- :doc delete entry association given entry id
+DELETE FROM user_entries
+WHERE entry_id = :entry_id
+
+-- :name delete-entry-from-entries! :! :n
+-- :doc delete entry from entries table given entry id (contentful's id)
+DELETE FROM entries
+WHERE entry = :entry

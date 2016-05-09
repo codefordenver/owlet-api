@@ -137,9 +137,10 @@
         topic-header (get-in req [:headers "x-contentful-topic"])
         publish-header? (= topic-header "ContentManagement.Entry.publish")
         delete-header? (= topic-header "ContentManagement.Entry.delete")]
-    (if publish-header?
+    (cond
+      publish-header?
       (if (and entry-id social-id)
-        (let [has-entry? (some? (some (fn [e] (= entry-id e))
+        (let [has-entry? (some? (some #(= entry-id %)
                                       (check-for-duplicate-entries social-id)))]
           (if-not has-entry?
             (if-let [user-found (find-user-by-social-id social-id)]
@@ -162,8 +163,7 @@
                       (internal-server-error insert-into-user_entries!)))
                   (internal-server-error insert-entry!))))
             (not-modified "Only updating for published content."))))
-      (not-modified "Only updating for published content."))
-    (if delete-header?
+      delete-header?
       (let [{:keys [id]} (jdbc/with-db-transaction
                            [t-conn *db*]
                            (jdbc/db-set-rollback-only! t-conn)
@@ -186,8 +186,8 @@
             (if delete-entry-from-entries!
               (ok delete-entry-from-user_entries!)
               (internal-server-error delete-entry-from-entries!)))
-          (internal-server-error delete-entry-from-user_entries!))
-        (not-found (format "Entry ID %s not found." entry-id)))
+          (internal-server-error delete-entry-from-user_entries!)))
+      :else
       (not-modified "Only updating for published content."))))
 
 (defn handle-content-creation!
@@ -196,9 +196,9 @@
   [req]
   (let [{:keys [url social-id content-type auto-publish? space-id]} (:params req)
         _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        contentful-auth-token (System/getenv "OWLET_CONTENTFUL_AUTH_TOKEN")
+        contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
         opts {:headers {"X-Contentful-Content-Type" content-type
-                        "Authorization"             (str "Bearer " contentful-auth-token)
+                        "Authorization"             (str "Bearer " contentful-management-auth-token)
                         "Content-Type"              "application/json"}
               :body    (json/encode {:fields {:url      {"en-US" url}
                                               :socialid {"en-US" social-id}}})}
@@ -217,12 +217,38 @@
         (ok body))
       (ok body))))
 
+(defn handle-get-all-entries-for-given-user
+  "asynchronously GET all entries for given user"
+  [req]
+  (let [{:keys [social-id space-id]} (:params req)
+        _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
+        contentful-delivery-auth-token (System/getenv "OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN")
+        opts {:headers {"Authorization" (str "Bearer " contentful-delivery-auth-token)}}
+        contentful-cdn-responses (atom [])]
+    (if-let [found (find-user-by-social-id social-id)]
+      (let [entries (get-user-entries-by-id (:id found))]
+        (when-not (empty? entries)
+          (let [entry-ids (mapv #(get % :entry_id) entries)
+                contentful-entry-urls (->> entry-ids
+                                           (map #(:entry (get-entries-by-id %)))
+                                           (map #(format
+                                                  "https://cdn.contentful.com/spaces/%1s/entries/%2s"
+                                                  _space-id_ %)))
+                futures (doall (map #(http/get % opts) contentful-entry-urls))]
+            (doseq [resp futures]
+              (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true))))
+          (ok @contentful-cdn-responses)))
+      (not-found (str "No entries found for s-id:" social-id)))))
+
 (defroutes api-routes
            (context "/api" []
                     (GET "/user/:id" [] handle-singler-user-lookup)
                     (GET "/users" [] handle-get-users)
                     (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
                     (context "/content" []
+                             (context "/get" []
+                                      (GET "/entries"
+                                           {params :params} handle-get-all-entries-for-given-user))
                              (context "/create" []
                                       (POST "/entry"
                                             {params :params} handle-content-creation!))))

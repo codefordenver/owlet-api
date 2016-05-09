@@ -4,7 +4,8 @@ generated using Luminus version "2.9.10.26"
 
 ## Environment Variables:
 
-- export OWLET_CONTENTFUL_AUTH_TOKEN="ask a cfd member"
+- export OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN="ask a cfd member"
+- export OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
 - export OWLET_CONTENTFUL_DEFAULT_SPACE_ID="ask a cfd member"
 
 

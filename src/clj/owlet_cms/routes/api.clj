@@ -82,7 +82,7 @@
                                                               :sid         user_id})))]
     (if found?
       ;; check for multiple accounts with the same email
-      (let [n-accounts (into [] (find-user-by-email (:email found?)))]
+      (let [n-accounts (vec (find-user-by-email (:email found?)))]
         (if (> (count n-accounts) 1)
           ;; update all accounts with same :email
           (let [_ (doseq [user n-accounts]
@@ -112,11 +112,10 @@
   (let [user-id (get-in req [:route-params :id])]
     (if-let [found (find-user-by-social-id user-id)]
       (if-let [entries (get-user-entries-by-id (:id found))]
-        (if (not (empty? entries))
+        (if-not (empty? entries)
           (let [entry_ids (mapv #(get % :entry_id) entries)
-                join-entries-user (assoc found
-                                    :entries (->> entry_ids
-                                                  (map #(:entry (get-entries-by-id %)))))]
+                join-entries-user (assoc found :entries
+                                               (map #(:entry (get-entries-by-id %)) entry_ids))]
             (ok join-entries-user))
           (ok found)))
       (not-found "user not found"))))
@@ -125,10 +124,9 @@
 (defn- check-for-duplicate-entries [sid]
   (if-let [found (find-user-by-social-id sid)]
     (if-let [entries (get-user-entries-by-id (:id found))]
-      (if (not (empty? entries))
+      (if (seq entries)
         (let [entry_ids (mapv #(get % :entry_id) entries)]
-          (->> entry_ids
-               (mapv #(:entry (get-entries-by-id %)))))
+          (mapv #(:entry (get-entries-by-id %)) entry_ids))
         []))))
 
 (defn handle-update-user-content! [req]
@@ -227,7 +225,7 @@
         contentful-cdn-responses (atom [])]
     (if-let [found (find-user-by-social-id social-id)]
       (let [entries (get-user-entries-by-id (:id found))]
-        (when-not (empty? entries)
+        (when (seq entries)
           (let [entry-ids (mapv #(get % :entry_id) entries)
                 contentful-entry-urls (->> entry-ids
                                            (map #(:entry (get-entries-by-id %)))

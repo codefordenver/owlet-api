@@ -234,7 +234,8 @@
                                                   _space-id_ %)))
                 futures (doall (map #(http/get % opts) contentful-entry-urls))]
             (doseq [resp futures]
-              (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true))))
+              (when (= (:status @resp) 200)
+                (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true)))))
           (ok @contentful-cdn-responses)))
       (not-found (str "No entries found for s-id:" social-id)))))
 

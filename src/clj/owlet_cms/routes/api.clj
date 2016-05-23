@@ -192,14 +192,13 @@
   "handle content creation from a UI
   - must pass revision number for auto-publish option to work"
   [req]
-  (let [{:keys [url social-id content-type auto-publish? space-id]} (:params req)
+  (let [{:keys [content-type auto-publish? space-id fields]} (:params req)
         _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
         contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
         opts {:headers {"X-Contentful-Content-Type" content-type
                         "Authorization"             (str "Bearer " contentful-management-auth-token)
                         "Content-Type"              "application/json"}
-              :body    (json/encode {:fields {:url      {"en-US" url}
-                                              :socialid {"en-US" social-id}}})}
+              :body    (json/encode {:fields fields})}
         {:keys [status body]}
         @(http/post
            (format "https://api.contentful.com/spaces/%s/entries" _space-id_) opts)]
@@ -215,12 +214,39 @@
         (ok body))
       (ok body))))
 
+(defn handle-content-update!
+  "handle content update from a UI
+  - must pass entry-id and revision number for update"
+  [req]
+  (let [{:keys [content-type space-id entry-id fields]} (:params req)
+        _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
+        contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
+        opts {:headers {"X-Contentful-Content-Type" content-type
+                        "Authorization"             (str "Bearer " contentful-management-auth-token)
+                        "Content-Type"              "application/json"}}
+        {:keys [status body]}
+        @(http/get (format
+                     "https://api.contentful.com/spaces/%1s/entries/%2s"
+                     _space-id_ entry-id) opts)]
+    ;; if retrieval from Content Management API is successful
+    ;; perform the actual update..
+    (if (= status 200)
+      (let [revision (get-in (json/decode body true) [:sys :version])
+            _opts (assoc-in opts [:headers "X-Contentful-Version"] revision)
+            update-opts (assoc _opts :body (json/encode {:fields fields}))
+            {:keys [status body]}
+            @(http/put (format "https://api.contentful.com/spaces/%1s/entries/%2s" _space-id_ entry-id) update-opts)]
+        (if (= status 200)
+          (ok body)
+          (internal-server-error body)))
+      (internal-server-error body))))
+
 (defn handle-get-all-entries-for-given-user
   "asynchronously GET all entries for given user"
   [req]
   (let [{:keys [social-id space-id]} (:params req)
         _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        contentful-delivery-auth-token (System/getenv "OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN")
+        contentful-delivery-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
         opts {:headers {"Authorization" (str "Bearer " contentful-delivery-auth-token)}}
         contentful-cdn-responses (atom [])]
     (if-let [found (find-user-by-social-id social-id)]
@@ -230,7 +256,7 @@
                 contentful-entry-urls (->> entry-ids
                                            (map #(:entry (get-entries-by-id %)))
                                            (map #(format
-                                                  "https://cdn.contentful.com/spaces/%1s/entries/%2s"
+                                                  "https://api.contentful.com/spaces/%1s/entries/%2s"
                                                   _space-id_ %)))
                 futures (doall (map #(http/get % opts) contentful-entry-urls))]
             (doseq [resp futures]
@@ -250,7 +276,10 @@
                                            {params :params} handle-get-all-entries-for-given-user))
                              (context "/create" []
                                       (POST "/entry"
-                                            {params :params} handle-content-creation!))))
+                                            {params :params} handle-content-creation!))
+                             (context "/update" []
+                                      (PUT "/entry"
+                                           {params :params} handle-content-update!))))
            (context "/webhooks" []
                     (PUT "/auth0" {params :params} handle-user-insert-webhook!)
                     (POST "/contentful" {params :params} handle-update-user-content!)))

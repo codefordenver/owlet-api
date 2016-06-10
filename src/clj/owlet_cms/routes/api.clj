@@ -10,11 +10,9 @@
 
 (defn is-not-social-login-but-verified? [user]
   (let [identity0 (first (:identities user))]
-    (if (:isSocial identity0)
+    (if (and (:isSocial identity0) (:email_verified user))
       true
-      (if (:email_verified user)
-        true
-        false))))
+      false)))
 
 (defn find-user-by-social-id [sid]
   (try
@@ -241,29 +239,41 @@
           (internal-server-error body)))
       (internal-server-error body))))
 
-(defn handle-get-all-entries-for-given-user
-  "asynchronously GET all entries for given user"
+(defn handle-get-all-entries-for-given-user-or-space
+  "asynchronously GET all entries for given user or space
+  optionally pass library-view=true param to get all entries for given space"
   [req]
-  (let [{:keys [social-id space-id]} (:params req)
+  (let [{:keys [social-id space-id library-view]} (:params req)
         _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        contentful-delivery-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
-        opts {:headers {"Authorization" (str "Bearer " contentful-delivery-auth-token)}}
+        owlet-contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
+        owlet-activities-contentful-delivery-auth-token (System/getenv "OWLET_ACTIVITIES_CONTENTFUL_DELIVERY_AUTH_TOKEN")
+        opts1 {:headers {"Authorization" (str "Bearer " owlet-contentful-management-auth-token)}}
+        opts2 {:headers {"Authorization" (str "Bearer " owlet-activities-contentful-delivery-auth-token)}}
         contentful-cdn-responses (atom [])]
-    (if-let [found (find-user-by-social-id social-id)]
-      (let [entries (get-user-entries-by-id (:id found))]
-        (when (seq entries)
-          (let [entry-ids (mapv #(get % :entry_id) entries)
-                contentful-entry-urls (->> entry-ids
-                                           (map #(:entry (get-entries-by-id %)))
-                                           (map #(format
-                                                  "https://api.contentful.com/spaces/%1s/entries/%2s"
-                                                  _space-id_ %)))
-                futures (doall (map #(http/get % opts) contentful-entry-urls))]
-            (doseq [resp futures]
-              (when (= (:status @resp) 200)
-                (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true)))))
-          (ok @contentful-cdn-responses)))
-      (not-found (str "No entries found for s-id:" social-id)))))
+    (if (and social-id (not library-view))
+      (if-let [found (find-user-by-social-id social-id)]
+        (let [entries (get-user-entries-by-id (:id found))]
+          (when (seq entries)
+            (let [entry-ids (mapv #(get % :entry_id) entries)
+                  contentful-entry-urls (->> entry-ids
+                                             (map #(:entry (get-entries-by-id %)))
+                                             (map #(format
+                                                    "https://api.contentful.com/spaces/%1s/entries/%2s"
+                                                    _space-id_ %)))
+                  futures (doall (map #(http/get % opts1) contentful-entry-urls))]
+              (doseq [resp futures]
+                (when (= (:status @resp) 200)
+                  (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true)))))
+            (ok @contentful-cdn-responses)))
+        (not-found (str "No entries found for s-id:" social-id)))
+      (when (and library-view _space-id_)
+        (let [{:keys [status body]}
+              @(http/get (format
+                           "https://cdn.contentful.com/spaces/%1s/entries?"
+                           _space-id_) opts2)]
+          (if (= status 200)
+            (ok body)
+            (not-found status)))))))
 
 (defroutes api-routes
            (context "/api" []
@@ -273,7 +283,7 @@
                     (context "/content" []
                              (context "/get" []
                                       (GET "/entries"
-                                           {params :params} handle-get-all-entries-for-given-user))
+                                           {params :params} handle-get-all-entries-for-given-user-or-space))
                              (context "/create" []
                                       (POST "/entry"
                                             {params :params} handle-content-creation!))

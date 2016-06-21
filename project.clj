@@ -1,4 +1,4 @@
-(defproject owlet-cms "0.1.0-SNAPSHOT"
+(defproject owlet-api "0.1.0-SNAPSHOT"
 
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
@@ -38,7 +38,7 @@
   :source-paths ["src/clj"]
   :resource-paths ["resources"]
 
-  :main owlet-cms.core
+  :main owlet-api.core
   :migratus {:store :database :db ~(get (System/getenv) "DATABASE_URL")}
 
   :plugins [[lein-cprop "1.0.1"]
@@ -48,7 +48,7 @@
   {:uberjar {:omit-source true
 
              :aot :all
-             :uberjar-name "owlet-cms.jar"
+             :uberjar-name "owlet-api.jar"
              :source-paths ["env/prod/clj"]
              :resource-paths ["env/prod/resources"]}
    :dev           [:project/dev :profiles/dev]

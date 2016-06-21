@@ -1,7 +1,7 @@
-(ns owlet-cms.test.handler
+(ns owlet-api.test.handler
   (:require [clojure.test :refer :all])
   (:require [ring.mock.request :refer :all]
-            [owlet-cms.handler :refer :all]
+            [owlet-api.handler :refer :all]
             [cheshire.core :as json]))
 
 (deftest test-app

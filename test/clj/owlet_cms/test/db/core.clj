@@ -1,17 +1,17 @@
-(ns owlet-cms.test.db.core
-  (:require [owlet-cms.db.core :refer [*db*] :as db]
+(ns owlet-api.test.db.core
+  (:require [owlet-api.db.core :refer [*db*] :as db]
             [luminus-migrations.core :as migrations]
             [clojure.test :refer :all]
             [clojure.java.jdbc :as jdbc]
-            [owlet-cms.config :refer [env]]
+            [owlet-api.config :refer [env]]
             [mount.core :as mount]))
 
 (use-fixtures
   :once
   (fn [f]
     (mount/start
-      #'owlet-cms.config/env
-      #'owlet-cms.db.core/*db*)
+      #'owlet-api.config/env
+      #'owlet-api.db.core/*db*)
     (migrations/migrate ["migrate"] (env :database-url))
     (f)))
 

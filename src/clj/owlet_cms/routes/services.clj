@@ -1,4 +1,4 @@
-(ns owlet-cms.routes.services
+(ns owlet-api.routes.services
   (:require [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
             [schema.core :as s]))

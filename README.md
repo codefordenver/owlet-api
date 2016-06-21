@@ -1,7 +1,7 @@
-# owlet-cms
+# owlet-api
 
-[![Code Climate](https://codeclimate.com/github/codefordenver/owlet-cms/badges/gpa.svg)](https://codeclimate.com/github/codefordenver/owlet-cms)
-[![Issue Count](https://codeclimate.com/github/codefordenver/owlet-cms/badges/issue_count.svg)](https://codeclimate.com/github/codefordenver/owlet-cms)
+[![Code Climate](https://codeclimate.com/github/codefordenver/owlet-api/badges/gpa.svg)](https://codeclimate.com/github/codefordenver/owlet-api)
+[![Issue Count](https://codeclimate.com/github/codefordenver/owlet-api/badges/issue_count.svg)](https://codeclimate.com/github/codefordenver/owlet-api)
 
 generated using Luminus version "2.9.10.26"
 

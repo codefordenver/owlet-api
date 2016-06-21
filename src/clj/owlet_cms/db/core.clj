@@ -1,9 +1,9 @@
-(ns owlet-cms.db.core
+(ns owlet-api.db.core
   (:require
     [cheshire.core :refer [generate-string parse-string]]
     [clojure.java.jdbc :as jdbc]
     [conman.core :as conman]
-    [owlet-cms.config :refer [env]]
+    [owlet-api.config :refer [env]]
     [mount.core :refer [defstate]])
   (:import org.postgresql.util.PGobject
            org.postgresql.jdbc4.Jdbc4Array

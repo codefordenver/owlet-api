@@ -1,12 +1,12 @@
 (ns user
   (:require [mount.core :as mount]
-            owlet-cms.core))
+            owlet-api.core))
 
 (defn start []
-  (mount/start-without #'owlet-cms.core/repl-server))
+  (mount/start-without #'owlet-api.core/repl-server))
 
 (defn stop []
-  (mount/stop-except #'owlet-cms.core/repl-server))
+  (mount/stop-except #'owlet-api.core/repl-server))
 
 (defn restart []
   (stop)

@@ -1,8 +1,8 @@
-(ns owlet-cms.middleware
-  (:require [owlet-cms.layout :refer [*app-context* error-page]]
+(ns owlet-api.middleware
+  (:require [owlet-api.layout :refer [*app-context* error-page]]
             [clojure.tools.logging :as log]
-            [owlet-cms.env :refer [defaults]]
-            [owlet-cms.config :refer [env]]
+            [owlet-api.env :refer [defaults]]
+            [owlet-api.config :refer [env]]
             [ring.middleware.flash :refer [wrap-flash]]
             [immutant.web.middleware :refer [wrap-session]]
             [ring.middleware.webjars :refer [wrap-webjars]]

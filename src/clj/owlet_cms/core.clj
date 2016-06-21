@@ -1,12 +1,12 @@
-(ns owlet-cms.core
-  (:require [owlet-cms.handler :as handler]
+(ns owlet-api.core
+  (:require [owlet-api.handler :as handler]
             [luminus.repl-server :as repl]
             [luminus.http-server :as http]
             [luminus-migrations.core :as migrations]
-            [owlet-cms.config :refer [env]]
+            [owlet-api.config :refer [env]]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.tools.logging :as log]
-            [owlet-cms.env :refer [defaults]]
+            [owlet-api.env :refer [defaults]]
             [luminus.logger :as logger]
             [mount.core :as mount])
   (:gen-class))
@@ -53,7 +53,7 @@
   (cond
     (some #{"migrate" "rollback"} args)
     (do
-      (mount/start #'owlet-cms.config/env)
+      (mount/start #'owlet-api.config/env)
       (migrations/migrate args (env :database-url))
       (System/exit 0))
     :else

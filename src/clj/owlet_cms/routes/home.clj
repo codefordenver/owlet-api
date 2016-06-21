@@ -1,5 +1,5 @@
-(ns owlet-cms.routes.home
-  (:require [owlet-cms.layout :as layout]
+(ns owlet-api.routes.home
+  (:require [owlet-api.layout :as layout]
             [compojure.core :refer [defroutes GET PUT]]
             [ring.util.http-response :as response]
             [clojure.java.io :as io]))

@@ -1,11 +1,11 @@
-(ns owlet-cms.handler
+(ns owlet-api.handler
   (:require [compojure.core :refer [routes wrap-routes]]
-            [owlet-cms.layout :refer [error-page]]
-            [owlet-cms.routes.home :refer [home-routes]]
-            [owlet-cms.routes.api :refer [api-routes]]
-            [owlet-cms.routes.services :refer [service-routes]]
+            [owlet-api.layout :refer [error-page]]
+            [owlet-api.routes.home :refer [home-routes]]
+            [owlet-api.routes.api :refer [api-routes]]
+            [owlet-api.routes.services :refer [service-routes]]
             [compojure.route :as route]
-            [owlet-cms.middleware :as middleware]))
+            [owlet-api.middleware :as middleware]))
 
 (def app-routes
   (routes

@@ -1,5 +1,5 @@
-(ns owlet-cms.routes.api
-  (:require [owlet-cms.db.core :refer [*db*] :as db])
+(ns owlet-api.routes.api
+  (:require [owlet-api.db.core :refer [*db*] :as db])
   (:require [compojure.core :refer [defroutes GET PUT POST]]
             [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer [context]]

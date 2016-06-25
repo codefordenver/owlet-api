@@ -26,8 +26,8 @@ With postgres installed on your system (`brew install postgres`)
 - Then populate the contents of `profiles.clj` with:
 
 	```
-	{:profiles/dev  {:env {:database-url "jdbc:postgresql://localhost/owlet_dev?	user=postgres&password=password"}}
-	 :profiles/test {:env {:database-url "jdbc:postgresql://localhost/owlet_test?	user=postgres&password=password"}}}
+	{:profiles/dev  {:env {:database-url "jdbc:postgresql://localhost/owlet_dev?user=postgres&password=password"}}
+	 :profiles/test {:env {:database-url "jdbc:postgresql://localhost/owlet_test?user=postgres&password=password"}}}
 	```
 - Migrate all outstanding migrations 
 	

@@ -8,13 +8,13 @@
 ## SETUP
 
 
-### Prerequisites:
+### Prerequisites
 
 - Java 1.8 or greater
 
 - You will need [Leiningen][1] 2.0 or above installed.
 
-### Database stuff:
+### Database stuff
 
 With postgres installed on your system (`brew install postgres`)
 
@@ -23,7 +23,7 @@ With postgres installed on your system (`brew install postgres`)
 - `touch profiles.clj` (from project root)
 
 
-- Then populate the contents of `profiles.clj` with:
+- Then populate the contents of `profiles.clj` with
 
 	```
 	{:profiles/dev  {:env {:database-url "jdbc:postgresql://localhost/owlet_dev?user=postgres&password=password"}}
@@ -34,7 +34,7 @@ With postgres installed on your system (`brew install postgres`)
 	`lein migratus migrate`
 
 	
-### Environment Variables:
+### Environment Variables
 
 - export OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN="ask a cfd member"
 - export OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
@@ -43,14 +43,18 @@ With postgres installed on your system (`brew install postgres`)
 
 [1]: https://github.com/technomancy/leiningen
 
-### Running: 
+### Running
 
-To start a web server for the application, run:
+To start a web server for the application, run
 
     lein run
-    
 
-### Dev Workflow Notes:
+To then start a **R**ead-**E**val-**P**rint **L**oop (REPL) in the running
+environment, run
+
+    lein repl :connect 7000
+
+### Dev Workflow Notes
 
 #### ngrok
 
@@ -79,7 +83,7 @@ to understand how the different parts of your code and its dependencies connect
 together, you can do refactoring, smart code completion, one-click navigation
 to a variable definition, instantly view docstrings, catch arity and spelling
 errors — all while you type. Best of all, out of the box, you can run a
-**R**ead-**E**val-**P**rint **L**oop (REPL) that knows about your code. Quickly
+$**R**ead-**E**val-**P**rint **L**oop (REPL) that knows about your code. Quickly
 experiment with your live, running code on a command line, then load a change
 into the REPL, switch namespaces, or run unit tests with just a couple
 keystrokes.
@@ -110,10 +114,7 @@ later if you like.
 
   The _Run/Debug Configurations_ window should look something like this:
 
-<div style="text-align:center">
-  <img src="resources/docs/images/IntelliJ-Configuration.png"
-       alt="Run/Debug Configurations window">
-</div>
+![Run/Debug Configurations window](resources/docs/images/IntelliJ-Configuration.png)
 
   (Note that in this example, there are also a couple additional configurations
 listed on the left, "Remote REPL on port 7000" and "lein run". You don't need
@@ -125,8 +126,10 @@ to provide these.)
 configuration ("Local REPL", above).
 
 - You should see the REPL tool window, and the REPL should be ready in half a
-minute or so when you see "nREPL server started on port ..." in the REPL
-output.
+minute or so when you see something like this in the REPL output:
+
+    ...
+    nREPL server started on port 59872 on host 127.0.0.1 - nrepl://127.0.0.1:59872
 
 - You can now enter Clojure expressions in the field at the bottom of the REPL
 tool window. To evaluate it, hit Command-Return or just Return if the cursor
@@ -140,10 +143,19 @@ to start owlet-app:
 which results in
 
     ...
+    [2016-07-01 11:35:37,142][luminus.repl-server] starting nREPL server on port 7000
+    ...
     [2016-07-01 11:35:37,146][INFO][owlet-api.core] #'owlet-api.core/repl-server started
     [2016-07-01 11:35:37,147][INFO][owlet-api.env]
     -=[owlet-api started successfully using the development profile]=-
     => nil
+
+Note that this unnecessarily starts _another_ nREPL server on port 7000, as
+above with `lein run`. So you can use `lein repl :connect 7000` at the command
+line, or `lein repl :connect 59872`, where 59872 is the port number we saw when
+we started Local REPL above. Both will access the same environment of your
+running app, so defining a var or changing state will be visible in all the
+REPLs.
 
 - Use the _Tools -> REPL_ menu to reload the file or just the
 expression you edited _while the code is executing_ and see results instantly.

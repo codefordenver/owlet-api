@@ -8,6 +8,15 @@
             [org.httpkit.client :as http]
             [cheshire.core :as json]))
 
+(defonce OWLET-DEFAULT-SPACE-ID
+         (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
+
+(defonce OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN
+         (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN"))
+
+(defonce OWLET-ACTIVITIES-CONTENTFUL-DELIVERY-AUTH-TOKEN
+         (System/getenv "OWLET_ACTIVITIES_CONTENTFUL_DELIVERY_AUTH_TOKEN"))
+
 (defn is-not-social-login-but-verified? [user]
   (let [identity0 (first (:identities user))]
     (if (and (:isSocial identity0) (:email_verified user))
@@ -191,10 +200,9 @@
   - must pass revision number for auto-publish option to work"
   [req]
   (let [{:keys [content-type auto-publish? space-id fields]} (:params req)
-        _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
+        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
         opts {:headers {"X-Contentful-Content-Type" content-type
-                        "Authorization"             (str "Bearer " contentful-management-auth-token)
+                        "Authorization"             (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)
                         "Content-Type"              "application/json"}
               :body    (json/encode {:fields fields})}
         {:keys [status body]}
@@ -217,10 +225,9 @@
   - must pass entry-id and revision number for update"
   [req]
   (let [{:keys [content-type space-id entry-id fields]} (:params req)
-        _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
+        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
         opts {:headers {"X-Contentful-Content-Type" content-type
-                        "Authorization"             (str "Bearer " contentful-management-auth-token)
+                        "Authorization"             (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)
                         "Content-Type"              "application/json"}}
         {:keys [status body]}
         @(http/get (format
@@ -244,11 +251,9 @@
   optionally pass library-view=true param to get all entries for given space"
   [req]
   (let [{:keys [social-id space-id library-view]} (:params req)
-        _space-id_ (or space-id (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
-        owlet-contentful-management-auth-token (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN")
-        owlet-activities-contentful-delivery-auth-token (System/getenv "OWLET_ACTIVITIES_CONTENTFUL_DELIVERY_AUTH_TOKEN")
-        opts1 {:headers {"Authorization" (str "Bearer " owlet-contentful-management-auth-token)}}
-        opts2 {:headers {"Authorization" (str "Bearer " owlet-activities-contentful-delivery-auth-token)}}
+        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
+        opts1 {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
+        opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-CONTENTFUL-DELIVERY-AUTH-TOKEN)}}
         contentful-cdn-responses (atom [])]
     (if (and social-id (not library-view))
       (if-let [found (find-user-by-social-id social-id)]
@@ -277,21 +282,18 @@
 
 (defroutes api-routes
            (context "/api" []
-                    (GET "/user/:id" [] handle-singler-user-lookup)
-                    (GET "/users" [] handle-get-users)
-                    (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
-                    (context "/content" []
-                             (context "/get" []
-                                      (GET "/entries"
-                                           {params :params} handle-get-all-entries-for-given-user-or-space))
-                             (context "/create" []
-                                      (POST "/entry"
-                                            {params :params} handle-content-creation!))
-                             (context "/update" []
-                                      (PUT "/entry"
-                                           {params :params} handle-content-update!))))
+             (GET "/user/:id" [] handle-singler-user-lookup)
+             (GET "/users" [] handle-get-users)
+             (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
+             (context "/content" []
+               (GET "/entries"
+                    {params :params} handle-get-all-entries-for-given-user-or-space)
+               (POST "/entries"
+                     {params :params} handle-content-creation!)
+               (PUT "/entries"
+                    {params :params} handle-content-update!)))
            (context "/webhooks" []
-                    (PUT "/auth0" {params :params} handle-user-insert-webhook!)
-                    (POST "/contentful" {params :params} handle-update-user-content!)))
+             (PUT "/auth0" {params :params} handle-user-insert-webhook!)
+             (POST "/contentful" {params :params} handle-update-user-content!)))
 
 

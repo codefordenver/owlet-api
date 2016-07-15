@@ -29,11 +29,11 @@ With postgres installed on your system (`brew install postgres`)
 	{:profiles/dev  {:env {:database-url "jdbc:postgresql://localhost/owlet_dev?user=postgres&password=password"}}
 	 :profiles/test {:env {:database-url "jdbc:postgresql://localhost/owlet_test?user=postgres&password=password"}}}
 	```
-- Migrate all outstanding migrations 
-	
+- Migrate all outstanding migrations
+
 	`lein migratus migrate`
 
-	
+
 ### Environment Variables
 
 - export OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN="ask a cfd member"
@@ -58,8 +58,8 @@ environment, run
 
 #### ngrok
 
-During developement you probably want to proxy request from and to `localhost`
-to contenful. For this you can use something like [ngrok](https://ngrok.com/)
+During development you probably want to proxy request from and to `localhost`
+to contentful. For this you can use something like [ngrok](https://ngrok.com/)
 to tunnel the webhook responses:
 
 with ngrok installed (`brew cask install ngrok`)
@@ -166,4 +166,3 @@ in the app and experiment with the functions there.
 
 - You can set a breakpoint to halt execution at a particular spot in the code
 and step through the execution, check variables, etc.
-

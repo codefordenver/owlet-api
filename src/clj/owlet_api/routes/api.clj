@@ -291,9 +291,7 @@
                (POST "/entries"
                      {params :params} handle-content-creation!)
                (PUT "/entries"
-                    {params :params} handle-content-update!)))
-           (context "/webhooks" []
-             (PUT "/auth0" {params :params} handle-user-insert-webhook!)
-             (POST "/contentful" {params :params} handle-update-user-content!)))
-
-
+                    {params :params} handle-content-update!))
+             (context "/webhooks" []
+               (PUT "/auth0" {params :params} handle-user-insert-webhook!)
+               (POST "/contentful" {params :params} handle-update-user-content!))))

@@ -116,8 +116,8 @@
     (catch Exception e (str "caught e:" (.getNextException e)))))
 
 (defn handle-singler-user-lookup [req]
-  (let [user-id (get-in req [:route-params :id])]
-    (if-let [found (find-user-by-social-id user-id)]
+  (let [sid (get-in req [:route-params :sid])]
+    (if-let [found (find-user-by-social-id sid)]
       (if-let [entries (get-user-entries-by-id (:id found))]
         (if-not (empty? entries)
           (let [entry_ids (mapv #(get % :entry_id) entries)
@@ -282,7 +282,7 @@
 
 (defroutes api-routes
            (context "/api" []
-             (GET "/user/:id" [] handle-singler-user-lookup)
+             (GET "/user/:sid" [] handle-singler-user-lookup)
              (GET "/users" [] handle-get-users)
              (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
              (context "/content" []

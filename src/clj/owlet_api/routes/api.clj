@@ -256,8 +256,8 @@
         opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-CONTENTFUL-DELIVERY-AUTH-TOKEN)}}
         contentful-cdn-responses (atom [])]
     (if (and social-id (not library-view))
-      (if-let [found (find-user-by-social-id social-id)]
-        (let [entries (get-user-entries-by-id (:id found))]
+      (if-let [user-found (find-user-by-social-id social-id)]
+        (if-let [entries (get-user-entries-by-id (:id user-found))]
           (when (seq entries)
             (let [entry-ids (mapv #(get % :entry_id) entries)
                   contentful-entry-urls (->> entry-ids
@@ -269,8 +269,9 @@
               (doseq [resp futures]
                 (when (= (:status @resp) 200)
                   (swap! contentful-cdn-responses conj (json/parse-string (:body @resp) true)))))
-            (ok @contentful-cdn-responses)))
-        (not-found (str "No entries found for s-id:" social-id)))
+            (ok @contentful-cdn-responses))
+          (not-found (str "No entries found for s-id:" social-id)))
+        (not-found (str "s-id: " social-id " not found")))
       (when (and library-view _space-id_)
         (let [{:keys [status body]}
               @(http/get (format

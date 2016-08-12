@@ -278,7 +278,7 @@
                            "https://cdn.contentful.com/spaces/%1s/entries?"
                            _space-id_) opts2)]
           (if (= status 200)
-            (ok body)
+            (ok (json/parse-string body true))
             (not-found status)))))))
 
 (defroutes api-routes

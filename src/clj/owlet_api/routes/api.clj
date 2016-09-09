@@ -281,12 +281,32 @@
             (ok (json/parse-string body true))
             (not-found status)))))))
 
+(defn handle-get-models-by-space
+  "GET all models by space id"
+  [req]
+  (let [headers {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
+        {:keys [space-id]} (:params req)
+        {:keys [status body]} @(http/get (format
+                                           "https://api.contentful.com/spaces/%1s/content_types"
+                                           space-id) headers)]
+    (if (= status 200)
+      (let [body (json/parse-string body true)
+            total (:total body)
+            models (map (fn [m] {:name (m :name)
+                                 :description (m :description)})
+                        (:items body))]
+        (ok {:models {:total total
+                      :models models}}))
+      (internal-server-error (str "Not able retrieve content models for id: " space-id)))))
+
 (defroutes api-routes
            (context "/api" []
              (GET "/user/:sid" [] handle-singler-user-lookup)
              (GET "/users" [] handle-get-users)
              (PUT "/users-district-id" {params :params} handle-update-users-district-id!)
              (context "/content" []
+               (GET "/models/:space-id" {params :params}
+                 handle-get-models-by-space)
                (GET "/entries"
                     {params :params} handle-get-all-entries-for-given-user-or-space)
                (POST "/entries"

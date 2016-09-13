@@ -292,10 +292,11 @@
     (if (= status 200)
       (let [body (json/parse-string body true)
             total (:total body)
-            models (map (fn [m] {:name (m :name)
+            models (map (fn [m] {:name        (m :name)
+                                 :model-id    (get-in m [:sys :id])
                                  :description (m :description)})
                         (:items body))]
-        (ok {:models {:total total
+        (ok {:models {:total  total
                       :models models}}))
       (internal-server-error (str "Not able retrieve content models for id: " space-id)))))
 

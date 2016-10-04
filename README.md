@@ -104,6 +104,9 @@ _Local_.
 
 - Give the configuration a name, like "Local REPL".
 
+- Make sure _Run nREPL with Leiningen_ is selected and type `dev` in the
+_Profiles:_ field.
+
 - Populate the _Environment:_ field by clicking the **...** button on its right
 and entering keys OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN, etc., along with
 their respective values provided to you by a Code For Denver member.
@@ -152,10 +155,10 @@ which results in
 
 Note that this unnecessarily starts _another_ nREPL server on port 7000, as
 above with `lein run`. So you can use `lein repl :connect 7000` at the command
-line, or `lein repl :connect 59872`, where 59872 is the port number we saw when
-we started Local REPL above. Both will access the same environment of your
-running app, so defining a var or changing state will be visible in all the
-REPLs.
+line in a separate terminal, or `lein repl :connect 59872`, where 59872 is the
+port number we saw when we started Local REPL above. Both will access the same
+environment of your running app, so defining a var or changing state will be
+visible in all the REPLs.
 
 - Use the _Tools -> REPL_ menu to reload the file or just the
 expression you edited _while the code is executing_ and see results instantly.

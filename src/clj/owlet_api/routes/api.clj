@@ -14,8 +14,8 @@
 (defonce OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN
          (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN"))
 
-(defonce OWLET-ACTIVITIES-CONTENTFUL-DELIVERY-AUTH-TOKEN
-         (System/getenv "OWLET_ACTIVITIES_CONTENTFUL_DELIVERY_AUTH_TOKEN"))
+(defonce OWLET-ACTIVITIES-2-CONTENTFUL-DELIVERY-AUTH-TOKEN
+         (System/getenv "OWLET_ACTIVITIES_2_CONTENTFUL_DELIVERY_AUTH_TOKEN"))
 
 (defn is-not-social-login-but-verified? [user]
   (let [identity0 (first (:identities user))]
@@ -253,7 +253,7 @@
   (let [{:keys [social-id space-id library-view]} (:params req)
         _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
         opts1 {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
-        opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-CONTENTFUL-DELIVERY-AUTH-TOKEN)}}
+        opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-2-CONTENTFUL-DELIVERY-AUTH-TOKEN)}}
         contentful-cdn-responses (atom [])]
     (if (and social-id (not library-view))
       (if-let [user-found (find-user-by-social-id social-id)]
@@ -263,8 +263,8 @@
                   contentful-entry-urls (->> entry-ids
                                              (map #(:entry (get-entries-by-id %)))
                                              (map #(format
-                                                    "https://api.contentful.com/spaces/%1s/entries/%2s"
-                                                    _space-id_ %)))
+                                                     "https://api.contentful.com/spaces/%1s/entries/%2s"
+                                                     _space-id_ %)))
                   futures (doall (map #(http/get % opts1) contentful-entry-urls))]
               (doseq [resp futures]
                 (when (= (:status @resp) 200)
@@ -300,6 +300,30 @@
                       :models models}}))
       (internal-server-error (str "Not able retrieve content models for id: " space-id)))))
 
+(defn handle-get-all-branches
+  "GET all branches in Activity model for owlet-activities-2 space"
+  [req]
+  (let [headers {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
+        {:keys [space-id]} (:params req)
+        {:keys [status body]} @(http/get (format
+                                           "https://api.contentful.com/spaces/%1s/content_types"
+                                           space-id) headers)]
+    (if (= status 200)
+      (let [body (json/parse-string body true)
+            items (body :items)
+            activity-model (some #(when (= (:name %) "Activity") %) items)
+            activity-model-fields (:fields activity-model)
+            validations (get-in (some #(when (= (:id %) "branch") %) activity-model-fields)
+                                [:items :validations])
+            branches (-> validations
+                         first
+                         :in)
+
+            total (count branches)]
+        (ok {:branches {:total    total
+                        :branches branches}}))
+      (internal-server-error (str status ": not able retrieve branches for activity model")))))
+
 (defroutes api-routes
            (context "/api" []
              (GET "/user/:sid" [] handle-singler-user-lookup)
@@ -308,6 +332,8 @@
              (context "/content" []
                (GET "/models/:space-id" {params :params}
                  handle-get-models-by-space)
+               (GET "/branches/:space-id" {params :params}
+                 handle-get-all-branches)
                (GET "/entries"
                     {params :params} handle-get-all-entries-for-given-user-or-space)
                (POST "/entries"

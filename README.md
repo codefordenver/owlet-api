@@ -40,6 +40,7 @@ With postgres installed on your system (`brew install postgres`)
 - export OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
 - export OWLET_CONTENTFUL_DEFAULT_SPACE_ID="ask a cfd member"
 - export OWLET_ACTIVITIES_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
+- export OWLET_ACTIVITIES_2_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
 
 [1]: https://github.com/technomancy/leiningen
 

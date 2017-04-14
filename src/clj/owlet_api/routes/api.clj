@@ -8,6 +8,8 @@
             [org.httpkit.client :as http]
             [cheshire.core :as json]))
 
+(declare get-activity-metadata)
+
 (defonce OWLET-DEFAULT-SPACE-ID
          (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
 
@@ -19,9 +21,7 @@
 
 (defn is-not-social-login-but-verified? [user]
   (let [identity0 (first (:identities user))]
-    (if (and (:isSocial identity0) (:email_verified user))
-      true
-      false)))
+    (and (:isSocial identity0) (:email_verified user))))
 
 (defn find-user-by-social-id [sid]
   (try
@@ -246,10 +246,29 @@
           (internal-server-error body)))
       (internal-server-error body))))
 
+(defn- process-metadata
+  [metadata]
+  (let [body (json/parse-string metadata true)
+        items (body :items)
+        activity-model (some #(when (= (:name %) "Activity") %) items)
+        activity-model-fields (:fields activity-model)
+        pluck-prop (fn [prop]
+                     (-> (get-in (some #(when (= (:id %) prop) %) activity-model-fields)
+                                 [:items :validations])
+                         first
+                         :in))
+        skills (pluck-prop "skills")
+        branches (pluck-prop "branch")]
+    {:skills   skills
+     :branches branches}))
+
 (defn handle-get-all-entries-for-given-user-or-space
+
   "asynchronously GET all entries for given user or space
   optionally pass library-view=true param to get all entries for given space"
+
   [req]
+
   (let [{:keys [social-id space-id library-view]} (:params req)
         _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
         opts1 {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
@@ -274,11 +293,11 @@
         (not-found (str "s-id: " social-id " not found")))
       (when (and library-view _space-id_)
         (let [{:keys [status body]}
-              @(http/get (format
-                           "https://cdn.contentful.com/spaces/%1s/entries?"
-                           _space-id_) opts2)]
+              @(http/get (format "https://cdn.contentful.com/spaces/%1s/entries?" _space-id_) opts2)
+              metadata (get-activity-metadata _space-id_ opts1)]
           (if (= status 200)
-            (ok (json/parse-string body true))
+            (ok {:metadata (process-metadata (:body @metadata))
+                 :entries (json/parse-string body true)})
             (not-found status)))))))
 
 (defn handle-get-models-by-space
@@ -300,29 +319,10 @@
                       :models models}}))
       (internal-server-error (str "Not able retrieve content models for id: " space-id)))))
 
-(defn handle-activity-metadata-request
+(defn- get-activity-metadata
   "GET all branches in Activity model for owlet-activities-2 space"
-  [req]
-  (let [headers {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
-        {:keys [space-id]} (:params req)
-        {:keys [status body]} @(http/get (format
-                                           "https://api.contentful.com/spaces/%1s/content_types"
-                                           space-id) headers)]
-    (if (= status 200)
-      (let [body (json/parse-string body true)
-            items (body :items)
-            activity-model (some #(when (= (:name %) "Activity") %) items)
-            activity-model-fields (:fields activity-model)
-            pluck-prop (fn [prop]
-                         (-> (get-in (some #(when (= (:id %) prop) %) activity-model-fields)
-                                     [:items :validations])
-                             first
-                             :in))
-            skills (pluck-prop "skills")
-            branches (pluck-prop "branch")]
-        (ok {:skills   skills
-             :branches branches}))
-      (internal-server-error (str status ": not able retrieve branches for activity model")))))
+  [space-id headers]
+  (http/get (format "https://api.contentful.com/spaces/%1s/content_types" space-id) headers))
 
 (defroutes api-routes
            (context "/api" []
@@ -332,9 +332,7 @@
              (context "/content" []
                (GET "/models/:space-id" {params :params}
                  handle-get-models-by-space)
-               (GET "/metadata/:space-id" {params :params}
-                 handle-activity-metadata-request)
-               (GET "/entries"
+               (GET "/space"
                     {params :params} handle-get-all-entries-for-given-user-or-space)
                (POST "/entries"
                      {params :params} handle-content-creation!)

@@ -10,14 +10,14 @@
 
 (declare get-activity-metadata)
 
-(defonce OWLET-DEFAULT-SPACE-ID
-         (System/getenv "OWLET_CONTENTFUL_DEFAULT_SPACE_ID"))
+(defonce OWLET-ACTIVITIES-3-SPACE-ID
+         (System/getenv "OWLET_ACTIVITIES_3_SPACE_ID"))
 
-(defonce OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN
-         (System/getenv "OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN"))
+(defonce OWLET-ACTIVITIES-3-MANAGEMENT-AUTH-TOKEN
+         (System/getenv "OWLET_ACTIVITIES_3_MANAGEMENT_AUTH_TOKEN"))
 
-(defonce OWLET-ACTIVITIES-2-CONTENTFUL-DELIVERY-AUTH-TOKEN
-         (System/getenv "OWLET_ACTIVITIES_2_CONTENTFUL_DELIVERY_AUTH_TOKEN"))
+(defonce OWLET-ACTIVITIES-3-DELIVERY-AUTH-TOKEN
+         (System/getenv "OWLET_ACTIVITIES_3_DELIVERY_AUTH_TOKEN"))
 
 (defn is-not-social-login-but-verified? [user]
   (let [identity0 (first (:identities user))]
@@ -200,9 +200,9 @@
   - must pass revision number for auto-publish option to work"
   [req]
   (let [{:keys [content-type auto-publish? space-id fields]} (:params req)
-        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
+        _space-id_ (or space-id OWLET-ACTIVITIES-3-SPACE-ID)
         opts {:headers {"X-Contentful-Content-Type" content-type
-                        "Authorization"             (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)
+                        "Authorization"             (str "Bearer " OWLET-ACTIVITIES-3-MANAGEMENT-AUTH-TOKEN)
                         "Content-Type"              "application/json"}
               :body    (json/encode {:fields fields})}
         {:keys [status body]}
@@ -225,9 +225,9 @@
   - must pass entry-id and revision number for update"
   [req]
   (let [{:keys [content-type space-id entry-id fields]} (:params req)
-        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
+        _space-id_ (or space-id OWLET-ACTIVITIES-3-SPACE-ID)
         opts {:headers {"X-Contentful-Content-Type" content-type
-                        "Authorization"             (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)
+                        "Authorization"             (str "Bearer " OWLET-ACTIVITIES-3-MANAGEMENT-AUTH-TOKEN)
                         "Content-Type"              "application/json"}}
         {:keys [status body]}
         @(http/get (format
@@ -270,9 +270,9 @@
   [req]
 
   (let [{:keys [social-id space-id library-view]} (:params req)
-        _space-id_ (or space-id OWLET-DEFAULT-SPACE-ID)
-        opts1 {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
-        opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-2-CONTENTFUL-DELIVERY-AUTH-TOKEN)}}
+        _space-id_ (or space-id OWLET-ACTIVITIES-3-SPACE-ID)
+        opts1 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-3-MANAGEMENT-AUTH-TOKEN)}}
+        opts2 {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-3-DELIVERY-AUTH-TOKEN)}}
         contentful-cdn-responses (atom [])]
     (if (and social-id (not library-view))
       (if-let [user-found (find-user-by-social-id social-id)]
@@ -303,7 +303,7 @@
 (defn handle-get-models-by-space
   "GET all models by space id"
   [req]
-  (let [headers {:headers {"Authorization" (str "Bearer " OWLET-CONTENTFUL-MANAGEMENT-AUTH-TOKEN)}}
+  (let [headers {:headers {"Authorization" (str "Bearer " OWLET-ACTIVITIES-3-MANAGEMENT-AUTH-TOKEN)}}
         {:keys [space-id]} (:params req)
         {:keys [status body]} @(http/get (format
                                            "https://api.contentful.com/spaces/%1s/content_types"

@@ -1,20 +1,25 @@
-# owlet-api
+# Deprecated 04.28.17
+## Moved to mmmanyfold API
+
+---
+
+## owlet-api
 
 [![Code Climate](https://codeclimate.com/github/codefordenver/owlet-api/badges/gpa.svg)](https://codeclimate.com/github/codefordenver/owlet-api)
 [![Issue Count](https://codeclimate.com/github/codefordenver/owlet-api/badges/issue_count.svg)](https://codeclimate.com/github/codefordenver/owlet-api)
 
 **generated using Luminus version "2.9.10.26"**
 
-## SETUP
+### SETUP
 
 
-### Prerequisites
+#### Prerequisites
 
 - Java 1.8 or greater
 
 - You will need [Leiningen][1] 2.0 or above installed.
 
-### Database stuff
+#### Database stuff
 
 With postgres installed on your system (`brew install postgres`)
 
@@ -34,7 +39,7 @@ With postgres installed on your system (`brew install postgres`)
 	`lein migratus migrate`
 
 
-### Environment Variables
+#### Environment Variables
 
 - export OWLET_CONTENTFUL_MANAGEMENT_AUTH_TOKEN="ask a cfd member"
 - export OWLET_CONTENTFUL_DELIVERY_AUTH_TOKEN="ask a cfd member"
@@ -44,7 +49,7 @@ With postgres installed on your system (`brew install postgres`)
 
 [1]: https://github.com/technomancy/leiningen
 
-### Running
+#### Running
 
 To start a web server for the application, run
 
@@ -55,9 +60,9 @@ environment, run
 
     lein repl :connect 7000
 
-### Dev Workflow Notes
+#### Dev Workflow Notes
 
-#### ngrok
+##### ngrok
 
 During development you probably want to proxy request from and to `localhost`
 to contentful. For this you can use something like [ngrok](https://ngrok.com/)
@@ -69,12 +74,12 @@ then `cd` into **/owlet-api** directory
 
 ```
 lein run
-ngrok http 3000 
+ngrok http 3000
 ```
 
 then finally copy and paste the ngrok url into **contentful.com** webhooks admin page.
 
-#### Cursive
+##### Cursive
 
 To work with Clojure and ClojureScript on this project, all you really need is
 a command line, a browser, and any text editor. However, there is much to be
